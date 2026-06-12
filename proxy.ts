@@ -30,31 +30,42 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // IMPORTANTE: usar getUser() y no getSession().
-  // getSession() lee solo la cookie local sin verificar con Supabase.
-  // getUser() verifica el token con el servidor, que es lo que necesitamos
-  // para que el refresco de sesión escriba cookies actualizadas en supabaseResponse.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
+  // Rutas del dashboard accesibles sin login (preview)
   const publicDashboard = ["/dashboard/preview", "/dashboard/configuracion"];
   const isPublic = publicDashboard.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
 
+  // 1. Sin sesión + dashboard protegido → login
   if (!user && pathname.startsWith("/dashboard") && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // 2. Con sesión + login → dashboard
   if (user && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Devolver siempre supabaseResponse (no NextResponse.next())
-  // para que las cookies de sesión actualizadas vayan en la respuesta.
+  // 3. Con sesión + dashboard protegido → comprobar lista blanca
+  if (user && pathname.startsWith("/dashboard") && !isPublic) {
+    const { data: cliente } = await supabase
+      .from("clientes_autorizados")
+      .select("id")
+      .eq("email", user.email!)
+      .eq("activo", true)
+      .maybeSingle();
+
+    if (!cliente) {
+      return NextResponse.redirect(new URL("/acceso-denegado", request.url));
+    }
+  }
+
   return supabaseResponse;
 }
 

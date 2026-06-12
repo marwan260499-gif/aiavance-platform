@@ -31,7 +31,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (!user && pathname.startsWith("/dashboard")) {
+  if (!user && pathname.startsWith("/dashboard") && pathname !== "/dashboard/preview") {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

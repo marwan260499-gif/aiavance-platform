@@ -51,7 +51,8 @@ export default function LoginPage() {
             placeholder="tu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ color: '#000000', backgroundColor: '#ffffff' }}
           />
           <button
             type="submit"

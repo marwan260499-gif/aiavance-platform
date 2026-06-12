@@ -31,7 +31,10 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (!user && pathname.startsWith("/dashboard") && pathname !== "/dashboard/preview") {
+  const publicDashboard = ["/dashboard/preview", "/dashboard/configuracion"];
+  const isPublic = publicDashboard.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+  if (!user && pathname.startsWith("/dashboard") && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Save } from "lucide-react";
+import { guardarEmpresa } from "./actions";
 
 type EmpresaData = {
   id?: string;
@@ -16,7 +16,6 @@ type EmpresaData = {
 
 type Props = {
   empresa: EmpresaData | null;
-  userId: string | null;
   isPreview: boolean;
 };
 
@@ -28,7 +27,7 @@ const sectores = [
   { value: "otro",         label: "Otro" },
 ];
 
-export default function ConfiguracionForm({ empresa, userId, isPreview }: Props) {
+export default function ConfiguracionForm({ empresa, isPreview }: Props) {
   const [form, setForm] = useState<EmpresaData>({
     nombre_negocio: empresa?.nombre_negocio ?? "",
     sector:         empresa?.sector         ?? "otro",
@@ -40,34 +39,31 @@ export default function ConfiguracionForm({ empresa, userId, isPreview }: Props)
   const [saving, setSaving]   = useState(false);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
-  const supabase = createClient();
-
   function set(field: keyof EmpresaData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (isPreview || !userId) return;
+    if (isPreview) return;
     setSaving(true);
     setMessage(null);
 
-    let error;
-
-    if (empresa?.id) {
-      ({ error } = await supabase
-        .from("empresas")
-        .update({ ...form })
-        .eq("id", empresa.id));
-    } else {
-      ({ error } = await supabase
-        .from("empresas")
-        .insert({ ...form, user_id: userId }));
-    }
+    const { error } = await guardarEmpresa(
+      {
+        nombre_negocio:  form.nombre_negocio,
+        sector:          form.sector,
+        ubicacion:       form.ubicacion,
+        phone_number_id: form.phone_number_id,
+        system_prompt:   form.system_prompt,
+        estado:          form.estado,
+      },
+      empresa?.id
+    );
 
     setMessage(
       error
-        ? { text: error.message, ok: false }
+        ? { text: error, ok: false }
         : { text: "Configuración guardada correctamente.", ok: true }
     );
     setSaving(false);
@@ -200,7 +196,7 @@ export default function ConfiguracionForm({ empresa, userId, isPreview }: Props)
       <button
         type="submit"
         disabled={isPreview || saving}
-        className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer"
       >
         <Save size={16} strokeWidth={1.75} />
         {saving ? "Guardando..." : "Guardar configuración"}

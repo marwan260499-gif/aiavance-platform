@@ -24,7 +24,7 @@ export default async function ConfiguracionPage() {
         <p className="mb-8 text-sm text-gray-400">
           Ajusta los datos y el comportamiento del agente IA de tu negocio.
         </p>
-        <ConfiguracionForm empresa={previewEmpresa} userId={null} isPreview />
+        <ConfiguracionForm empresa={previewEmpresa} isPreview />
       </div>
     );
   }
@@ -41,7 +41,7 @@ export default async function ConfiguracionPage() {
       <p className="mb-8 text-sm text-gray-400">
         Ajusta los datos y el comportamiento del agente IA de tu negocio.
       </p>
-      <ConfiguracionForm empresa={empresa} userId={user.id} isPreview={false} />
+      <ConfiguracionForm empresa={empresa} isPreview={false} />
     </div>
   );
 }

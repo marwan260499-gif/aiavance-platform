@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 function getSupabaseUrl() {
@@ -6,9 +7,20 @@ function getSupabaseUrl() {
   return url.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
 }
 
+// Cliente admin con service role key — bypasa RLS, solo para verificar
+// la lista blanca. Nunca se expone al navegador (sin prefijo NEXT_PUBLIC_).
+function createAdminClient() {
+  return createClient(
+    getSupabaseUrl(),
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  // Cliente normal con anon key + cookies del usuario para gestionar sesión
   const supabase = createServerClient(
     getSupabaseUrl(),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -36,7 +48,6 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Rutas del dashboard accesibles sin login (preview)
   const publicDashboard = ["/dashboard/preview", "/dashboard/configuracion"];
   const isPublic = publicDashboard.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
@@ -52,9 +63,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // 3. Con sesión + dashboard protegido → comprobar lista blanca
+  // 3. Con sesión + dashboard protegido → verificar lista blanca con cliente admin
   if (user && pathname.startsWith("/dashboard") && !isPublic) {
-    const { data: cliente } = await supabase
+    const admin = createAdminClient();
+    const { data: cliente } = await admin
       .from("clientes_autorizados")
       .select("id")
       .eq("email", user.email!)

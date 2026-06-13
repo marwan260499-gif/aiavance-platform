@@ -1,6 +1,17 @@
-import Link from "next/link";
+"use client";
+
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 export default function AccesoDenegadoPage() {
+  const router = useRouter();
+
+  async function handleVolver() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-10 text-center">
@@ -38,12 +49,12 @@ export default function AccesoDenegadoPage() {
           </a>
         </p>
 
-        <Link
-          href="/login"
+        <button
+          onClick={handleVolver}
           className="inline-block text-sm text-gray-500 hover:text-gray-300 transition-colors"
         >
           ← Volver al login
-        </Link>
+        </button>
       </div>
     </main>
   );

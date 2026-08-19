@@ -63,9 +63,25 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
     };
   }, [empresaId]);
 
+  // Actualiza el estado local sin esperar al realtime: así el botón Confirmar
+  // responde al instante aunque el websocket tarde o se haya caído.
+  async function confirmarCita(id: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("citas")
+      .update({ confirmada: true })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error confirmando la cita:", error);
+      return;
+    }
+    setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, confirmada: true } : c)));
+  }
+
   return (
     <div>
-      <SolicitudesPendientes citas={citas} />
+      <SolicitudesPendientes citas={citas} onConfirmar={confirmarCita} />
 
       <div className="mb-5 flex items-center justify-end">
         <div className="inline-flex rounded-lg border border-gray-800 bg-gray-900 p-1">

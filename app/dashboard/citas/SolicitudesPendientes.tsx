@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { CalendarClock, Check } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { type Cita, canalLabel } from "./types";
 
-type Props = { citas: Cita[] };
+type Props = { citas: Cita[]; onConfirmar: (id: string) => Promise<void> };
 
-export default function SolicitudesPendientes({ citas }: Props) {
+export default function SolicitudesPendientes({ citas, onConfirmar }: Props) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const pendientes = citas
@@ -18,8 +17,7 @@ export default function SolicitudesPendientes({ citas }: Props) {
 
   async function handleConfirmar(id: string) {
     setLoadingId(id);
-    const supabase = createClient();
-    await supabase.from("citas").update({ confirmada: true }).eq("id", id);
+    await onConfirmar(id);
     setLoadingId(null);
   }
 

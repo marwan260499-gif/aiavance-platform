@@ -16,13 +16,17 @@ export default async function CitasPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const { data: citas } = empresa
+  const { data: citas, error: citasError } = empresa
     ? await supabase
         .from("citas")
-        .select("id, fecha_hora, duracion_min, confirmada, asistio, notas, lead_id, leads(nombre, canal)")
+        .select("id, fecha_hora, duracion_min, confirmada, asistio, lead_id, leads(nombre, canal)")
         .eq("empresa_id", empresa.id)
         .order("fecha_hora", { ascending: false })
-    : { data: [] };
+    : { data: [], error: null };
+
+  // Sin esto un fallo de la consulta (p.ej. una columna que no existe) se ve
+  // igual que "no hay citas" y es imposible de diagnosticar desde la UI.
+  if (citasError) console.error("Error cargando citas:", citasError);
 
   return (
     <div>

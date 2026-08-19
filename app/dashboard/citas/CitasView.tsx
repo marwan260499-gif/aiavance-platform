@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { type Cita } from "./types";
 import CitasTable from "./CitasTable";
 import CitasCalendar from "./CitasCalendar";
+import SolicitudesPendientes from "./SolicitudesPendientes";
 
 type Props = { initialCitas: Cita[]; empresaId: string | null };
 
@@ -64,6 +65,8 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
 
   return (
     <div>
+      <SolicitudesPendientes citas={citas} />
+
       <div className="mb-5 flex items-center justify-end">
         <div className="inline-flex rounded-lg border border-gray-800 bg-gray-900 p-1">
           <button

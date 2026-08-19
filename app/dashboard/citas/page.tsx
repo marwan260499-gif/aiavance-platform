@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import CitasTable from "./CitasTable";
+import CitasView from "./CitasView";
 
 export default async function CitasPage() {
   const supabase = await createClient();
@@ -33,7 +33,7 @@ export default async function CitasPage() {
         </p>
       </div>
 
-      <CitasTable
+      <CitasView
         initialCitas={(citas as any) ?? []}
         empresaId={empresa?.id ?? null}
       />

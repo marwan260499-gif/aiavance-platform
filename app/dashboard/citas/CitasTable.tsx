@@ -1,91 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Calendar, Check, X, Clock } from "lucide-react";
+import { type Cita, canalLabel, fmtFechaHora, isPast } from "./types";
 
-type Cita = {
-  id: string;
-  fecha_hora: string;
-  duracion_min: number | null;
-  confirmada: boolean;
-  asistio: boolean | null;
-  notas: string | null;
-  lead_id: string;
-  leads: { nombre: string | null; canal: string | null } | null;
-};
+type Props = { citas: Cita[] };
 
-const canalLabel: Record<string, string> = {
-  whatsapp: "WhatsApp",
-  email:    "Email",
-  webchat:  "Web Chat",
-  sms:      "SMS",
-};
-
-function fmtFechaHora(iso: string) {
-  return new Date(iso).toLocaleString("es-ES", {
-    weekday: "short",
-    day:     "2-digit",
-    month:   "2-digit",
-    year:    "numeric",
-    hour:    "2-digit",
-    minute:  "2-digit",
-  });
-}
-
-function isPast(iso: string) {
-  return new Date(iso) < new Date();
-}
-
-type Props = { initialCitas: Cita[]; empresaId: string | null };
-
-export default function CitasTable({ initialCitas, empresaId }: Props) {
-  const [citas, setCitas] = useState<Cita[]>(initialCitas);
-
-  useEffect(() => {
-    if (!empresaId) return;
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`citas-${empresaId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "citas", filter: `empresa_id=eq.${empresaId}` },
-        async (payload) => {
-          const { data } = await supabase
-            .from("citas")
-            .select("id, fecha_hora, duracion_min, confirmada, asistio, notas, lead_id, leads(nombre, canal)")
-            .eq("id", (payload.new as Cita).id)
-            .single();
-          if (data) setCitas((prev) => [data as unknown as Cita, ...prev].sort(
-            (a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime()
-          ));
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "citas", filter: `empresa_id=eq.${empresaId}` },
-        (payload) => {
-          setCitas((prev) =>
-            prev.map((c) =>
-              c.id === (payload.new as Cita).id
-                ? { ...c, ...(payload.new as Partial<Cita>) }
-                : c
-            )
-          );
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "citas", filter: `empresa_id=eq.${empresaId}` },
-        (payload) => {
-          setCitas((prev) => prev.filter((c) => c.id !== (payload.old as Cita).id));
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [empresaId]);
-
+export default function CitasTable({ citas }: Props) {
   if (citas.length === 0) {
     return (
       <div className="rounded-xl border border-gray-800 bg-gray-900 px-6 py-20 text-center">

@@ -27,7 +27,7 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
         async (payload) => {
           const { data } = await supabase
             .from("citas")
-            .select("id, fecha_hora, duracion_min, confirmada, asistio, lead_id, leads(nombre, canal)")
+            .select("id, fecha_hora, duracion_min, confirmada, asistio, notas, lead_id, leads(nombre, canal)")
             .eq("id", (payload.new as Cita).id)
             .single();
           if (data)

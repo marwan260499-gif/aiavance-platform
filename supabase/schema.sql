@@ -71,6 +71,7 @@ create table if not exists public.citas (
   duracion_min             integer     not null default 60,
   confirmada               boolean     not null default false,
   asistio                  boolean,
+  notas                    text,
   created_at               timestamptz not null default now()
 );
 

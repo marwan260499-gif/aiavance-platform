@@ -4,7 +4,7 @@ export type Cita = {
   duracion_min: number | null;
   confirmada: boolean;
   asistio: boolean | null;
-  notas?: string | null;
+  notas: string | null;
   lead_id: string;
   leads: { nombre: string | null; canal: string | null } | null;
 };

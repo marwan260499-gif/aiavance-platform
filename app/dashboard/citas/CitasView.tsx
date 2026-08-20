@@ -27,7 +27,7 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
         async (payload) => {
           const { data } = await supabase
             .from("citas")
-            .select("id, fecha_hora, duracion_min, confirmada, asistio, notas, lead_id, leads(nombre, canal)")
+            .select("id, fecha_hora, duracion_min, confirmada, asistio, cancelada, notas, lead_id, leads(nombre, canal)")
             .eq("id", (payload.new as Cita).id)
             .single();
           if (data)
@@ -42,10 +42,13 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "citas", filter: `empresa_id=eq.${empresaId}` },
         (payload) => {
+          const actualizada = payload.new as Cita;
           setCitas((prev) =>
-            prev.map((c) =>
-              c.id === (payload.new as Cita).id ? { ...c, ...(payload.new as Partial<Cita>) } : c
-            )
+            // Una cita cancelada sale de la agenda: la fila sigue en la base de
+            // datos para el historial, pero no debe pintarse en el calendario.
+            actualizada.cancelada
+              ? prev.filter((c) => c.id !== actualizada.id)
+              : prev.map((c) => (c.id === actualizada.id ? { ...c, ...actualizada } : c))
           );
         }
       )
@@ -79,6 +82,19 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
     setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, confirmada: true } : c)));
   }
 
+  // asistio admite tres estados: true (vino), false (no vino) y null (sin
+  // marcar todavía), por eso volver a pulsar el botón activo lo deja en null.
+  async function marcarAsistio(id: string, asistio: boolean | null) {
+    const supabase = createClient();
+    const { error } = await supabase.from("citas").update({ asistio }).eq("id", id);
+
+    if (error) {
+      console.error("Error marcando la asistencia:", error);
+      return;
+    }
+    setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, asistio } : c)));
+  }
+
   return (
     <div>
       <SolicitudesPendientes citas={citas} onConfirmar={confirmarCita} />
@@ -108,7 +124,11 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
         </div>
       </div>
 
-      {vista === "calendario" ? <CitasCalendar citas={citas} /> : <CitasTable citas={citas} />}
+      {vista === "calendario" ? (
+        <CitasCalendar citas={citas} />
+      ) : (
+        <CitasTable citas={citas} onMarcarAsistio={marcarAsistio} />
+      )}
     </div>
   );
 }

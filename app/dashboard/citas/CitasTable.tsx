@@ -1,11 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { Calendar, Check, X, Clock } from "lucide-react";
 import { type Cita, canalLabel, fmtFechaHora, isPast } from "./types";
 
-type Props = { citas: Cita[] };
+type Props = {
+  citas: Cita[];
+  onMarcarAsistio: (id: string, asistio: boolean | null) => Promise<void>;
+};
 
-export default function CitasTable({ citas }: Props) {
+export default function CitasTable({ citas, onMarcarAsistio }: Props) {
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  async function handleAsistio(id: string, asistio: boolean | null) {
+    setLoadingId(id);
+    await onMarcarAsistio(id, asistio);
+    setLoadingId(null);
+  }
+
   if (citas.length === 0) {
     return (
       <div className="rounded-xl border border-gray-800 bg-gray-900 px-6 py-20 text-center">
@@ -83,21 +95,36 @@ export default function CitasTable({ citas }: Props) {
                 )}
               </span>
 
-              {/* Asistió */}
-              <span>
-                {c.asistio === true ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-300 border border-emerald-500/30">
-                    <Check size={11} strokeWidth={2.5} />
-                    Asistió
-                  </span>
-                ) : c.asistio === false ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2.5 py-0.5 text-xs font-medium text-red-300 border border-red-500/30">
-                    <X size={11} strokeWidth={2.5} />
-                    No asistió
-                  </span>
-                ) : (
-                  <span className="text-xs text-gray-600">—</span>
-                )}
+              {/* Asistió — se marca a mano; volver a pulsar deja la cita sin marcar */}
+              <span className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleAsistio(c.id, c.asistio === true ? null : true)}
+                  disabled={loadingId === c.id}
+                  title={c.asistio === true ? "Quitar la marca" : "Marcar que asistió"}
+                  aria-label={c.asistio === true ? "Quitar la marca de asistió" : "Marcar que asistió"}
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors disabled:opacity-40 ${
+                    c.asistio === true
+                      ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                      : "border-gray-700 text-gray-600 hover:border-emerald-500/40 hover:text-emerald-300"
+                  }`}
+                >
+                  <Check size={14} strokeWidth={2.5} />
+                </button>
+                <button
+                  onClick={() => handleAsistio(c.id, c.asistio === false ? null : false)}
+                  disabled={loadingId === c.id}
+                  title={c.asistio === false ? "Quitar la marca" : "Marcar que no asistió"}
+                  aria-label={
+                    c.asistio === false ? "Quitar la marca de no asistió" : "Marcar que no asistió"
+                  }
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors disabled:opacity-40 ${
+                    c.asistio === false
+                      ? "border-red-500/40 bg-red-500/20 text-red-300"
+                      : "border-gray-700 text-gray-600 hover:border-red-500/40 hover:text-red-300"
+                  }`}
+                >
+                  <X size={14} strokeWidth={2.5} />
+                </button>
               </span>
             </div>
           );

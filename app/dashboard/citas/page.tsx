@@ -19,8 +19,9 @@ export default async function CitasPage() {
   const { data: citas, error: citasError } = empresa
     ? await supabase
         .from("citas")
-        .select("id, fecha_hora, duracion_min, confirmada, asistio, notas, lead_id, leads(nombre, canal)")
+        .select("id, fecha_hora, duracion_min, confirmada, asistio, cancelada, notas, lead_id, leads(nombre, canal)")
         .eq("empresa_id", empresa.id)
+        .eq("cancelada", false)
         .order("fecha_hora", { ascending: false })
     : { data: [], error: null };
 

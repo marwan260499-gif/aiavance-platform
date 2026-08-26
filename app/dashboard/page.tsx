@@ -21,6 +21,8 @@ export default async function DashboardPage() {
   let handoffsPendientes = 0;
   let conversacionesActivas = 0;
 
+  let debugConversaciones: unknown = null;
+
   if (empresa) {
     const [leadsRes, citasRes, handoffsRes, conversacionesRes] = await Promise.all([
       supabase
@@ -39,10 +41,18 @@ export default async function DashboardPage() {
         .eq("estado", "pendiente"),
       supabase
         .from("conversaciones")
-        .select("id", { count: "exact", head: true })
+        .select("id, estado", { count: "exact" })
         .eq("empresa_id", empresa.id)
         .neq("estado", "cerrada"),
     ]);
+
+    debugConversaciones = {
+      empresaId: empresa.id,
+      count: conversacionesRes.count,
+      dataLength: (conversacionesRes.data ?? []).length,
+      data: conversacionesRes.data,
+      error: conversacionesRes.error,
+    };
 
     // Sin comprobar `error` un fallo de consulta se ve igual que "cero
     // resultados" y es imposible de diagnosticar desde la UI.
@@ -121,6 +131,11 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* DEBUG TEMPORAL — quitar tras diagnosticar el conteo de conversaciones */}
+      <pre className="mt-8 whitespace-pre-wrap rounded-xl border border-yellow-500/40 bg-yellow-500/5 p-4 text-xs text-yellow-200">
+        {JSON.stringify(debugConversaciones, null, 2)}
+      </pre>
     </div>
   );
 }

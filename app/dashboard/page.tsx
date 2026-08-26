@@ -2,41 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Users, Calendar, PhoneForwarded, MessageSquare } from "lucide-react";
 
-const metrics = [
-  {
-    label: "Total Leads",
-    value: 0,
-    icon: Users,
-    iconColor: "text-blue-400",
-    iconBg: "bg-blue-500/10",
-    border: "border-blue-500/20",
-  },
-  {
-    label: "Citas Agendadas",
-    value: 0,
-    icon: Calendar,
-    iconColor: "text-emerald-400",
-    iconBg: "bg-emerald-500/10",
-    border: "border-emerald-500/20",
-  },
-  {
-    label: "Handoffs Pendientes",
-    value: 0,
-    icon: PhoneForwarded,
-    iconColor: "text-orange-400",
-    iconBg: "bg-orange-500/10",
-    border: "border-orange-500/20",
-  },
-  {
-    label: "Conversaciones Activas",
-    value: 0,
-    icon: MessageSquare,
-    iconColor: "text-purple-400",
-    iconBg: "bg-purple-500/10",
-    border: "border-purple-500/20",
-  },
-];
-
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
@@ -44,6 +9,92 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const { data: empresa } = await supabase
+    .from("empresas")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  let totalLeads = 0;
+  let citasAgendadas = 0;
+  let handoffsPendientes = 0;
+  let conversacionesActivas = 0;
+
+  if (empresa) {
+    const [leadsRes, citasRes, handoffsRes, conversacionesRes] = await Promise.all([
+      supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .eq("empresa_id", empresa.id),
+      supabase
+        .from("citas")
+        .select("id", { count: "exact", head: true })
+        .eq("empresa_id", empresa.id)
+        .eq("cancelada", false),
+      supabase
+        .from("handoffs")
+        .select("id", { count: "exact", head: true })
+        .eq("empresa_id", empresa.id)
+        .eq("estado", "pendiente"),
+      supabase
+        .from("conversaciones")
+        .select("id", { count: "exact", head: true })
+        .eq("empresa_id", empresa.id)
+        .neq("estado", "cerrada"),
+    ]);
+
+    // Sin comprobar `error` un fallo de consulta se ve igual que "cero
+    // resultados" y es imposible de diagnosticar desde la UI.
+    for (const [nombre, res] of [
+      ["leads", leadsRes],
+      ["citas", citasRes],
+      ["handoffs", handoffsRes],
+      ["conversaciones", conversacionesRes],
+    ] as const) {
+      if (res.error) console.error(`Error contando ${nombre}:`, res.error);
+    }
+
+    totalLeads = leadsRes.count ?? 0;
+    citasAgendadas = citasRes.count ?? 0;
+    handoffsPendientes = handoffsRes.count ?? 0;
+    conversacionesActivas = conversacionesRes.count ?? 0;
+  }
+
+  const metrics = [
+    {
+      label: "Total Leads",
+      value: totalLeads,
+      icon: Users,
+      iconColor: "text-blue-400",
+      iconBg: "bg-blue-500/10",
+      border: "border-blue-500/20",
+    },
+    {
+      label: "Citas Agendadas",
+      value: citasAgendadas,
+      icon: Calendar,
+      iconColor: "text-emerald-400",
+      iconBg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+    },
+    {
+      label: "Handoffs Pendientes",
+      value: handoffsPendientes,
+      icon: PhoneForwarded,
+      iconColor: "text-orange-400",
+      iconBg: "bg-orange-500/10",
+      border: "border-orange-500/20",
+    },
+    {
+      label: "Conversaciones Activas",
+      value: conversacionesActivas,
+      icon: MessageSquare,
+      iconColor: "text-purple-400",
+      iconBg: "bg-purple-500/10",
+      border: "border-purple-500/20",
+    },
+  ];
 
   return (
     <div>

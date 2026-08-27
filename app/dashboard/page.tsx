@@ -22,6 +22,10 @@ export default async function DashboardPage() {
   let conversacionesActivas = 0;
 
   if (empresa) {
+    // fecha_hora es timestamptz en UTC; al comparar con "ahora" se compara
+    // el instante real (Postgres resuelve el ISO con offset), nunca texto.
+    const ahoraUtc = new Date().toISOString();
+
     const [leadsRes, citasRes, handoffsRes, conversacionesRes] = await Promise.all([
       supabase
         .from("leads")
@@ -31,7 +35,9 @@ export default async function DashboardPage() {
         .from("citas")
         .select("id", { count: "exact", head: true })
         .eq("empresa_id", empresa.id)
-        .eq("cancelada", false),
+        .eq("cancelada", false)
+        .eq("confirmada", true)
+        .gte("fecha_hora", ahoraUtc),
       supabase
         .from("handoffs")
         .select("id", { count: "exact", head: true })

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { MADRID_TZ } from "@/lib/dates";
 
 type Lead = {
   id: string;
@@ -33,6 +34,7 @@ function scoreColor(n: number) {
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", {
+    timeZone: MADRID_TZ,
     day: "2-digit", month: "2-digit", year: "numeric",
   });
 }

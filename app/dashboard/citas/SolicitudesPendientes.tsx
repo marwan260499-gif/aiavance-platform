@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CalendarClock, Check } from "lucide-react";
 import { type Cita, canalLabel } from "./types";
+import { MADRID_TZ } from "@/lib/dates";
 
 type Props = { citas: Cita[]; onConfirmar: (id: string) => Promise<void> };
 
@@ -42,6 +43,7 @@ export default function SolicitudesPendientes({ citas, onConfirmar }: Props) {
             </p>
             <p className="text-xs text-gray-400">
               {new Date(c.fecha_hora).toLocaleString("es-ES", {
+                timeZone: MADRID_TZ,
                 weekday: "short",
                 day: "2-digit",
                 month: "2-digit",

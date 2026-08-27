@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { MADRID_TZ, madridDayKey } from "@/lib/dates";
 import { MessageSquare, User, Bot, Headphones, ChevronRight } from "lucide-react";
 
 type Conversacion = {
@@ -38,18 +39,21 @@ const canalLabel: Record<string, string> = {
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
-  const now = new Date();
-  const isToday =
-    d.getDate() === now.getDate() &&
-    d.getMonth() === now.getMonth() &&
-    d.getFullYear() === now.getFullYear();
+  // Compara el día en Madrid, no en la zona del dispositivo — evita que
+  // un mensaje de madrugada se clasifique como "de ayer" o viceversa.
+  const isToday = madridDayKey(iso) === madridDayKey(new Date().toISOString());
   if (isToday)
-    return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return d.toLocaleTimeString("es-ES", { timeZone: MADRID_TZ, hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString("es-ES", {
+    timeZone: MADRID_TZ,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("es-ES", { timeZone: MADRID_TZ, hour: "2-digit", minute: "2-digit" });
 }
 
 type Props = {

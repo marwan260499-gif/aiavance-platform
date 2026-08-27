@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Check, X, Clock } from "lucide-react";
 import { type Cita, canalLabel, dateKey, isPast } from "./types";
+import { MADRID_TZ, madridDayKey } from "@/lib/dates";
 
 type Props = { citas: Cita[] };
 
@@ -47,7 +48,9 @@ export default function CitasCalendar({ citas }: Props) {
   const citasPorDia = useMemo(() => {
     const map = new Map<string, Cita[]>();
     for (const c of citas) {
-      const key = dateKey(new Date(c.fecha_hora));
+      // Día en Madrid, no en la zona horaria del dispositivo — una cita a
+      // las 23:30 UTC puede caer en el día siguiente en Madrid.
+      const key = madridDayKey(c.fecha_hora);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(c);
     }
@@ -196,6 +199,7 @@ export default function CitasCalendar({ citas }: Props) {
                     <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500">
                       <Clock size={11} className={past ? "text-gray-600" : "text-blue-400"} />
                       {new Date(c.fecha_hora).toLocaleTimeString("es-ES", {
+                        timeZone: MADRID_TZ,
                         hour: "2-digit",
                         minute: "2-digit",
                       })}

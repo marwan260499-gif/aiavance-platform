@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AlertCircle, Phone, CheckCircle } from "lucide-react";
+import { MADRID_TZ } from "@/lib/dates";
 
 type Handoff = {
   id: string;
@@ -25,6 +26,7 @@ const estadoBadge: Record<string, string> = {
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString("es-ES", {
+    timeZone: MADRID_TZ,
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });

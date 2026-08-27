@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CalendarClock, Check } from "lucide-react";
-import { type Cita, canalLabel } from "./types";
+import { type Cita, canalLabel, nombreEsUtil } from "./types";
 import { MADRID_TZ } from "@/lib/dates";
 
 type Props = { citas: Cita[]; onConfirmar: (id: string) => Promise<void> };
@@ -39,8 +39,13 @@ export default function SolicitudesPendientes({ citas, onConfirmar }: Props) {
             className="flex w-64 shrink-0 flex-col gap-1.5 rounded-lg border border-gray-800 bg-gray-900 p-3.5"
           >
             <p className="truncate text-sm font-semibold text-white">
-              {c.leads?.nombre ?? "Lead sin nombre"}
+              {nombreEsUtil(c.leads?.nombre)
+                ? c.leads!.nombre
+                : c.leads?.telefono ?? "Lead sin nombre ni teléfono"}
             </p>
+            {nombreEsUtil(c.leads?.nombre) && c.leads?.telefono && (
+              <p className="text-xs text-gray-500">{c.leads.telefono}</p>
+            )}
             <p className="text-xs text-gray-400">
               {new Date(c.fecha_hora).toLocaleString("es-ES", {
                 timeZone: MADRID_TZ,

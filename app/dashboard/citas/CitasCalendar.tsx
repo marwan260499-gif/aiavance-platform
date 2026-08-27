@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Check, X, Clock, Ban } from "lucide-react";
-import { type Cita, canalLabel, dateKey, isPast } from "./types";
+import { type Cita, canalLabel, dateKey, isPast, nombreEsUtil } from "./types";
 import { MADRID_TZ, madridDayKey } from "@/lib/dates";
 
 type Props = {
@@ -198,8 +198,12 @@ export default function CitasCalendar({ citas, onCancelar, onMarcarAsistio }: Pr
                 return (
                   <div key={c.id} className="rounded-lg border border-gray-800 bg-gray-950/50 p-3">
                     <div className="flex items-center justify-between gap-2">
+                      {/* Si el nombre no sirve (vacío o solo emoji), el
+                          teléfono pasa a ser el identificador principal */}
                       <p className="truncate text-sm font-medium text-white">
-                        {c.leads?.nombre ?? "Lead sin nombre"}
+                        {nombreEsUtil(c.leads?.nombre)
+                          ? c.leads!.nombre
+                          : c.leads?.telefono ?? "Lead sin nombre ni teléfono"}
                       </p>
                       {c.asistio === true ? (
                         <Check size={13} className="shrink-0 text-emerald-400" strokeWidth={2.5} />
@@ -207,6 +211,9 @@ export default function CitasCalendar({ citas, onCancelar, onMarcarAsistio }: Pr
                         <X size={13} className="shrink-0 text-red-400" strokeWidth={2.5} />
                       ) : null}
                     </div>
+                    {nombreEsUtil(c.leads?.nombre) && c.leads?.telefono && (
+                      <p className="text-xs text-gray-500">{c.leads.telefono}</p>
+                    )}
                     <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-500">
                       <Clock size={11} className={past ? "text-gray-600" : "text-blue-400"} />
                       {new Date(c.fecha_hora).toLocaleTimeString("es-ES", {

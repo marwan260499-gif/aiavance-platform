@@ -9,7 +9,7 @@ export type Cita = {
   cancelada: boolean;
   notas: string | null;
   lead_id: string;
-  leads: { nombre: string | null; canal: string | null } | null;
+  leads: { nombre: string | null; telefono: string | null; canal: string | null } | null;
 };
 
 export const canalLabel: Record<string, string> = {
@@ -29,6 +29,14 @@ export function fmtFechaHora(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+// WhatsApp a veces manda el nombre de perfil vacío o como un emoji suelto,
+// que no sirve para identificar a nadie. Si no hay ninguna letra o número,
+// lo tratamos como "sin nombre útil" y el teléfono pasa a ser lo principal.
+export function nombreEsUtil(nombre: string | null | undefined): boolean {
+  if (!nombre) return false;
+  return /[\p{L}\p{N}]/u.test(nombre);
 }
 
 export function isPast(iso: string) {

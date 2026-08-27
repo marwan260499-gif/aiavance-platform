@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { List, CalendarDays, Ban } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { type Cita } from "./types";
+import { type Cita, nombreEsUtil } from "./types";
 import CitasTable from "./CitasTable";
 import CitasCalendar from "./CitasCalendar";
 import SolicitudesPendientes from "./SolicitudesPendientes";
@@ -29,7 +29,7 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
         async (payload) => {
           const { data } = await supabase
             .from("citas")
-            .select("id, fecha_hora, duracion_min, confirmada, asistio, cancelada, notas, lead_id, leads(nombre, canal)")
+            .select("id, fecha_hora, duracion_min, confirmada, asistio, cancelada, notas, lead_id, leads(nombre, telefono, canal)")
             .eq("id", (payload.new as Cita).id)
             .single();
           if (data)
@@ -176,7 +176,9 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
             <p className="text-sm text-gray-300">
               ¿Seguro que quieres cancelar la cita con{" "}
               <span className="font-medium text-white">
-                {pendingCancelCita.leads?.nombre ?? "este lead"}
+                {nombreEsUtil(pendingCancelCita.leads?.nombre)
+                  ? pendingCancelCita.leads!.nombre
+                  : pendingCancelCita.leads?.telefono ?? "este lead"}
               </span>
               ?
             </p>

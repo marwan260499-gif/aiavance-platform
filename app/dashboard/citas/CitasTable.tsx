@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Calendar, Check, X, Clock, Ban } from "lucide-react";
-import { type Cita, canalLabel, fmtFechaHora, isPast } from "./types";
+import { type Cita, canalLabel, fmtFechaHora, isPast, nombreEsUtil } from "./types";
 
 type Props = {
   citas: Cita[];
@@ -51,11 +51,21 @@ export default function CitasTable({ citas, onMarcarAsistio, onCancelar }: Props
               key={c.id}
               className="grid grid-cols-[1fr_200px_80px_100px_100px_44px] items-center gap-4 px-5 py-4 transition-colors hover:bg-gray-800/40"
             >
-              {/* Lead */}
+              {/* Lead — si el nombre no sirve (vacío o solo emoji), el
+                  teléfono pasa a ser el identificador principal */}
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-white">
-                  {c.leads?.nombre ?? "Lead sin nombre"}
-                </p>
+                {nombreEsUtil(c.leads?.nombre) ? (
+                  <>
+                    <p className="truncate text-sm font-semibold text-white">{c.leads!.nombre}</p>
+                    {c.leads?.telefono && (
+                      <p className="mt-0.5 truncate text-xs text-gray-500">{c.leads.telefono}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="truncate text-sm font-semibold text-white">
+                    {c.leads?.telefono ?? "Lead sin nombre ni teléfono"}
+                  </p>
+                )}
                 {c.leads?.canal && (
                   <p className="mt-0.5 text-xs text-gray-500">
                     {canalLabel[c.leads.canal] ?? c.leads.canal}

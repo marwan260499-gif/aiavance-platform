@@ -97,36 +97,43 @@ export default function CitasTable({ citas, onMarcarAsistio, onCancelar }: Props
                 )}
               </span>
 
-              {/* Asistió — se marca a mano; volver a pulsar deja la cita sin marcar */}
+              {/* Asistió — solo tiene sentido preguntarlo de citas ya pasadas.
+                  Se marca a mano; volver a pulsar deja la cita sin marcar. */}
               <span className="flex items-center gap-1.5">
-                <button
-                  onClick={() => handleAsistio(c.id, c.asistio === true ? null : true)}
-                  disabled={loadingId === c.id}
-                  title={c.asistio === true ? "Quitar la marca" : "Marcar que asistió"}
-                  aria-label={c.asistio === true ? "Quitar la marca de asistió" : "Marcar que asistió"}
-                  className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors disabled:opacity-40 ${
-                    c.asistio === true
-                      ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
-                      : "border-gray-700 text-gray-600 hover:border-emerald-500/40 hover:text-emerald-300"
-                  }`}
-                >
-                  <Check size={14} strokeWidth={2.5} />
-                </button>
-                <button
-                  onClick={() => handleAsistio(c.id, c.asistio === false ? null : false)}
-                  disabled={loadingId === c.id}
-                  title={c.asistio === false ? "Quitar la marca" : "Marcar que no asistió"}
-                  aria-label={
-                    c.asistio === false ? "Quitar la marca de no asistió" : "Marcar que no asistió"
-                  }
-                  className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors disabled:opacity-40 ${
-                    c.asistio === false
-                      ? "border-red-500/40 bg-red-500/20 text-red-300"
-                      : "border-gray-700 text-gray-600 hover:border-red-500/40 hover:text-red-300"
-                  }`}
-                >
-                  <X size={14} strokeWidth={2.5} />
-                </button>
+                {past ? (
+                  <>
+                    <button
+                      onClick={() => handleAsistio(c.id, c.asistio === true ? null : true)}
+                      disabled={loadingId === c.id}
+                      title={c.asistio === true ? "Quitar la marca" : "Marcar que asistió"}
+                      aria-label={c.asistio === true ? "Quitar la marca de asistió" : "Marcar que asistió"}
+                      className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors disabled:opacity-40 ${
+                        c.asistio === true
+                          ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                          : "border-gray-700 text-gray-600 hover:border-emerald-500/40 hover:text-emerald-300"
+                      }`}
+                    >
+                      <Check size={14} strokeWidth={2.5} />
+                    </button>
+                    <button
+                      onClick={() => handleAsistio(c.id, c.asistio === false ? null : false)}
+                      disabled={loadingId === c.id}
+                      title={c.asistio === false ? "Quitar la marca" : "Marcar que no asistió"}
+                      aria-label={
+                        c.asistio === false ? "Quitar la marca de no asistió" : "Marcar que no asistió"
+                      }
+                      className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors disabled:opacity-40 ${
+                        c.asistio === false
+                          ? "border-red-500/40 bg-red-500/20 text-red-300"
+                          : "border-gray-700 text-gray-600 hover:border-red-500/40 hover:text-red-300"
+                      }`}
+                    >
+                      <X size={14} strokeWidth={2.5} />
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-xs text-gray-700">—</span>
+                )}
               </span>
 
               {/* Cancelar */}

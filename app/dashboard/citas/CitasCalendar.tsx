@@ -5,7 +5,11 @@ import { ChevronLeft, ChevronRight, Check, X, Clock, Ban } from "lucide-react";
 import { type Cita, canalLabel, dateKey, isPast } from "./types";
 import { MADRID_TZ, madridDayKey } from "@/lib/dates";
 
-type Props = { citas: Cita[]; onCancelar: (id: string) => void };
+type Props = {
+  citas: Cita[];
+  onCancelar: (id: string) => void;
+  onMarcarAsistio: (id: string, asistio: boolean | null) => Promise<void>;
+};
 
 const DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -40,10 +44,17 @@ function citaDotColor(c: Cita) {
   return "bg-gray-500";
 }
 
-export default function CitasCalendar({ citas, onCancelar }: Props) {
+export default function CitasCalendar({ citas, onCancelar, onMarcarAsistio }: Props) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selected, setSelected] = useState<string | null>(dateKey(today));
+  const [asistioLoadingId, setAsistioLoadingId] = useState<string | null>(null);
+
+  async function handleAsistio(id: string, asistio: boolean | null) {
+    setAsistioLoadingId(id);
+    await onMarcarAsistio(id, asistio);
+    setAsistioLoadingId(null);
+  }
 
   const citasPorDia = useMemo(() => {
     const map = new Map<string, Cita[]>();
@@ -207,6 +218,39 @@ export default function CitasCalendar({ citas, onCancelar }: Props) {
                       {c.leads?.canal ? ` · ${canalLabel[c.leads.canal] ?? c.leads.canal}` : ""}
                     </div>
                     {c.notas && <p className="mt-1.5 text-xs italic text-gray-600">{c.notas}</p>}
+
+                    {/* Asistió — solo tiene sentido preguntarlo de citas ya pasadas */}
+                    {past && (
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleAsistio(c.id, c.asistio === true ? null : true)}
+                          disabled={asistioLoadingId === c.id}
+                          title={c.asistio === true ? "Quitar la marca" : "Marcar que asistió"}
+                          className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-40 ${
+                            c.asistio === true
+                              ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                              : "border-gray-700 text-gray-500 hover:border-emerald-500/40 hover:text-emerald-300"
+                          }`}
+                        >
+                          <Check size={11} strokeWidth={2.5} />
+                          Asistió
+                        </button>
+                        <button
+                          onClick={() => handleAsistio(c.id, c.asistio === false ? null : false)}
+                          disabled={asistioLoadingId === c.id}
+                          title={c.asistio === false ? "Quitar la marca" : "Marcar que no asistió"}
+                          className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-40 ${
+                            c.asistio === false
+                              ? "border-red-500/40 bg-red-500/20 text-red-300"
+                              : "border-gray-700 text-gray-500 hover:border-red-500/40 hover:text-red-300"
+                          }`}
+                        >
+                          <X size={11} strokeWidth={2.5} />
+                          No asistió
+                        </button>
+                      </div>
+                    )}
+
                     <div className="mt-2 flex items-center justify-between gap-2">
                       {c.confirmada ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-300 border border-emerald-500/30">

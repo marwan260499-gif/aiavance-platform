@@ -154,7 +154,11 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
       </div>
 
       {vista === "calendario" ? (
-        <CitasCalendar citas={citas} onCancelar={setPendingCancelId} />
+        <CitasCalendar
+          citas={citas}
+          onCancelar={setPendingCancelId}
+          onMarcarAsistio={marcarAsistio}
+        />
       ) : (
         <CitasTable citas={citas} onMarcarAsistio={marcarAsistio} onCancelar={setPendingCancelId} />
       )}

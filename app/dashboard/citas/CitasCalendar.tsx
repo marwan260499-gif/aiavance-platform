@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Check, X, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Clock, Ban } from "lucide-react";
 import { type Cita, canalLabel, dateKey, isPast } from "./types";
 import { MADRID_TZ, madridDayKey } from "@/lib/dates";
 
-type Props = { citas: Cita[] };
+type Props = { citas: Cita[]; onCancelar: (id: string) => void };
 
 const DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -40,7 +40,7 @@ function citaDotColor(c: Cita) {
   return "bg-gray-500";
 }
 
-export default function CitasCalendar({ citas }: Props) {
+export default function CitasCalendar({ citas, onCancelar }: Props) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [selected, setSelected] = useState<string | null>(dateKey(today));
@@ -207,7 +207,7 @@ export default function CitasCalendar({ citas }: Props) {
                       {c.leads?.canal ? ` · ${canalLabel[c.leads.canal] ?? c.leads.canal}` : ""}
                     </div>
                     {c.notas && <p className="mt-1.5 text-xs italic text-gray-600">{c.notas}</p>}
-                    <div className="mt-2">
+                    <div className="mt-2 flex items-center justify-between gap-2">
                       {c.confirmada ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-300 border border-emerald-500/30">
                           Confirmada
@@ -217,10 +217,22 @@ export default function CitasCalendar({ citas }: Props) {
                           Pendiente
                         </span>
                       )}
+                      <button
+                        onClick={() => onCancelar(c.id)}
+                        title="Cancelar cita (no avisa al cliente)"
+                        aria-label="Cancelar cita"
+                        className="flex items-center gap-1 rounded-full border border-gray-700 px-2 py-0.5 text-[10px] font-medium text-gray-500 transition-colors hover:border-red-500/40 hover:text-red-300"
+                      >
+                        <Ban size={11} strokeWidth={2} />
+                        Cancelar
+                      </button>
                     </div>
                   </div>
                 );
               })}
+            <p className="pt-1 text-[10px] text-gray-600">
+              Cancelar aquí no avisa al cliente por WhatsApp — hay que avisarle por tu cuenta.
+            </p>
           </div>
         )}
       </div>

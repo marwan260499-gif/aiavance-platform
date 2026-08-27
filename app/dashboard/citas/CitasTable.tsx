@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Check, X, Clock } from "lucide-react";
+import { Calendar, Check, X, Clock, Ban } from "lucide-react";
 import { type Cita, canalLabel, fmtFechaHora, isPast } from "./types";
 
 type Props = {
   citas: Cita[];
   onMarcarAsistio: (id: string, asistio: boolean | null) => Promise<void>;
+  onCancelar: (id: string) => void;
 };
 
-export default function CitasTable({ citas, onMarcarAsistio }: Props) {
+export default function CitasTable({ citas, onMarcarAsistio, onCancelar }: Props) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleAsistio(id: string, asistio: boolean | null) {
@@ -33,12 +34,13 @@ export default function CitasTable({ citas, onMarcarAsistio }: Props) {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
       {/* Header */}
-      <div className="grid grid-cols-[1fr_200px_80px_100px_100px] gap-4 border-b border-gray-800 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+      <div className="grid grid-cols-[1fr_200px_80px_100px_100px_44px] gap-4 border-b border-gray-800 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
         <span>Lead</span>
         <span>Fecha y hora</span>
         <span>Duración</span>
         <span>Confirmada</span>
         <span>Asistió</span>
+        <span className="sr-only">Cancelar</span>
       </div>
 
       <div className="divide-y divide-gray-800/70">
@@ -47,7 +49,7 @@ export default function CitasTable({ citas, onMarcarAsistio }: Props) {
           return (
             <div
               key={c.id}
-              className="grid grid-cols-[1fr_200px_80px_100px_100px] items-center gap-4 px-5 py-4 transition-colors hover:bg-gray-800/40"
+              className="grid grid-cols-[1fr_200px_80px_100px_100px_44px] items-center gap-4 px-5 py-4 transition-colors hover:bg-gray-800/40"
             >
               {/* Lead */}
               <div className="min-w-0">
@@ -126,12 +128,27 @@ export default function CitasTable({ citas, onMarcarAsistio }: Props) {
                   <X size={14} strokeWidth={2.5} />
                 </button>
               </span>
+
+              {/* Cancelar */}
+              <span className="flex justify-end">
+                <button
+                  onClick={() => onCancelar(c.id)}
+                  title="Cancelar cita (no avisa al cliente)"
+                  aria-label="Cancelar cita"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-700 text-gray-600 transition-colors hover:border-red-500/40 hover:text-red-300"
+                >
+                  <Ban size={14} strokeWidth={2} />
+                </button>
+              </span>
             </div>
           );
         })}
       </div>
 
-      <div className="border-t border-gray-800 px-5 py-3 text-right">
+      <div className="flex items-center justify-between border-t border-gray-800 px-5 py-3">
+        <p className="text-xs text-gray-600">
+          Cancelar aquí no avisa al cliente por WhatsApp — hay que avisarle por tu cuenta.
+        </p>
         <p className="text-xs text-gray-600">
           {citas.length} cita{citas.length !== 1 ? "s" : ""} en total
         </p>

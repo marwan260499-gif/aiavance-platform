@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { List, CalendarDays } from "lucide-react";
+import { List, CalendarDays, Ban } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Cita } from "./types";
 import CitasTable from "./CitasTable";
@@ -15,6 +15,8 @@ type Vista = "calendario" | "lista";
 export default function CitasView({ initialCitas, empresaId }: Props) {
   const [citas, setCitas] = useState<Cita[]>(initialCitas);
   const [vista, setVista] = useState<Vista>("calendario");
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   useEffect(() => {
     if (!empresaId) return;
@@ -95,6 +97,33 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
     setCitas((prev) => prev.map((c) => (c.id === id ? { ...c, asistio } : c)));
   }
 
+  // Cancelar nunca borra la fila (queda para el historial), solo pone
+  // cancelada=true. La agenda ya filtra cancelada=false, así que desaparece
+  // de la vista sin que se pierda el registro. La confirmación es un diálogo
+  // propio (no window.confirm) para no romper la estética con el pop-up
+  // nativo del navegador, que además muestra el dominio de Vercel.
+  const pendingCancelCita = citas.find((c) => c.id === pendingCancelId) ?? null;
+
+  async function confirmarCancelacion() {
+    if (!pendingCancelId) return;
+    setCancelLoading(true);
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("citas")
+      .update({ cancelada: true })
+      .eq("id", pendingCancelId);
+
+    if (error) {
+      console.error("Error cancelando la cita:", error);
+      setCancelLoading(false);
+      return;
+    }
+    setCitas((prev) => prev.filter((c) => c.id !== pendingCancelId));
+    setCancelLoading(false);
+    setPendingCancelId(null);
+  }
+
   return (
     <div>
       <SolicitudesPendientes citas={citas} onConfirmar={confirmarCita} />
@@ -125,9 +154,53 @@ export default function CitasView({ initialCitas, empresaId }: Props) {
       </div>
 
       {vista === "calendario" ? (
-        <CitasCalendar citas={citas} />
+        <CitasCalendar citas={citas} onCancelar={setPendingCancelId} />
       ) : (
-        <CitasTable citas={citas} onMarcarAsistio={marcarAsistio} />
+        <CitasTable citas={citas} onMarcarAsistio={marcarAsistio} onCancelar={setPendingCancelId} />
+      )}
+
+      {pendingCancelCita && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-xl border border-gray-800 bg-gray-900 p-5 shadow-xl">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10">
+                <Ban size={18} className="text-red-400" strokeWidth={1.75} />
+              </span>
+              <p className="text-sm font-semibold text-white">Cancelar cita</p>
+            </div>
+
+            <p className="text-sm text-gray-300">
+              ¿Seguro que quieres cancelar la cita con{" "}
+              <span className="font-medium text-white">
+                {pendingCancelCita.leads?.nombre ?? "este lead"}
+              </span>
+              ?
+            </p>
+            <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+              Esto NO avisa al cliente por WhatsApp — tendrás que avisarle tú por tu cuenta.
+            </p>
+            <p className="mt-2 text-xs text-gray-500">
+              La cita desaparecerá de la agenda, pero queda guardada en el historial.
+            </p>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setPendingCancelId(null)}
+                disabled={cancelLoading}
+                className="rounded-lg border border-gray-700 px-3.5 py-2 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-800 disabled:opacity-50"
+              >
+                Volver
+              </button>
+              <button
+                onClick={confirmarCancelacion}
+                disabled={cancelLoading}
+                className="rounded-lg bg-red-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              >
+                {cancelLoading ? "Cancelando..." : "Sí, cancelar cita"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

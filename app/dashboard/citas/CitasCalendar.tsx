@@ -37,11 +37,37 @@ function buildMonthGrid(year: number, month: number): DayCell[] {
   return cells;
 }
 
-function citaDotColor(c: Cita) {
-  if (c.asistio === true) return "bg-emerald-400";
-  if (c.asistio === false) return "bg-red-400";
-  if (c.confirmada) return "bg-blue-400";
-  return "bg-gray-500";
+type EstadoCita = "pendiente" | "confirmada" | "asistio" | "no_asistio";
+
+function estadoDeCita(c: Cita): EstadoCita {
+  if (c.asistio === true) return "asistio";
+  if (c.asistio === false) return "no_asistio";
+  if (c.confirmada) return "confirmada";
+  return "pendiente";
+}
+
+// El color solo no basta para distinguir estados (daltonismo): cada uno
+// lleva además una forma distinta — círculo hueco, círculo relleno, check,
+// cruz — igual en la cuadrícula del mes que en la leyenda.
+function EstadoIndicador({ estado, size = 9 }: { estado: EstadoCita; size?: number }) {
+  if (estado === "asistio")
+    return <Check size={size} strokeWidth={3} className="shrink-0 text-emerald-400" />;
+  if (estado === "no_asistio")
+    return <X size={size} strokeWidth={3} className="shrink-0 text-red-400" />;
+  const dotSize = Math.round(size * 0.65);
+  if (estado === "confirmada")
+    return (
+      <span
+        className="shrink-0 rounded-full bg-blue-400"
+        style={{ width: dotSize, height: dotSize }}
+      />
+    );
+  return (
+    <span
+      className="shrink-0 rounded-full border-[1.5px] border-gray-400"
+      style={{ width: dotSize, height: dotSize }}
+    />
+  );
 }
 
 export default function CitasCalendar({ citas, onCancelar, onMarcarAsistio }: Props) {
@@ -144,9 +170,9 @@ export default function CitasCalendar({ citas, onCancelar, onMarcarAsistio }: Pr
                   {date.getDate()}
                 </span>
                 {dayCitas.length > 0 && (
-                  <span className="flex items-center gap-0.5">
+                  <span className="flex items-center gap-1">
                     {dayCitas.slice(0, 3).map((c) => (
-                      <span key={c.id} className={`h-1.5 w-1.5 rounded-full ${citaDotColor(c)}`} />
+                      <EstadoIndicador key={c.id} estado={estadoDeCita(c)} size={8} />
                     ))}
                     {dayCitas.length > 3 && (
                       <span className="text-[9px] text-gray-500">+{dayCitas.length - 3}</span>
@@ -158,19 +184,19 @@ export default function CitasCalendar({ citas, onCancelar, onMarcarAsistio }: Pr
           })}
         </div>
 
-        {/* Leyenda */}
+        {/* Leyenda — misma forma que en la cuadrícula, no solo el color */}
         <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-800 pt-3 text-xs text-gray-500">
           <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-gray-500" /> Pendiente
+            <EstadoIndicador estado="pendiente" /> Pendiente
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-blue-400" /> Confirmada
+            <EstadoIndicador estado="confirmada" /> Confirmada
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Asistió
+            <EstadoIndicador estado="asistio" /> Asistió
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400" /> No asistió
+            <EstadoIndicador estado="no_asistio" /> No asistió
           </span>
         </div>
       </div>

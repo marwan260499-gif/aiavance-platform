@@ -20,11 +20,25 @@ type Props = {
 };
 
 const sectores = [
-  { value: "peluqueria",   label: "Peluquería" },
-  { value: "clinica",      label: "Clínica" },
-  { value: "inmobiliaria", label: "Inmobiliaria" },
-  { value: "restaurante",  label: "Restaurante" },
-  { value: "otro",         label: "Otro" },
+  { value: "peluqueria",       label: "Peluquería" },
+  { value: "barberia",         label: "Barbería" },
+  { value: "centro_estetica",  label: "Centro de estética" },
+  { value: "clinica_estetica", label: "Clínica de estética / depilación láser" },
+  { value: "unas",             label: "Uñas / manicura" },
+  { value: "spa",              label: "Spa / masajes" },
+  { value: "clinica_dental",   label: "Clínica dental" },
+  { value: "clinica",          label: "Clínica médica" },
+  { value: "fisioterapia",     label: "Fisioterapia" },
+  { value: "podologia",        label: "Podología" },
+  { value: "gimnasio",         label: "Gimnasio / centro deportivo" },
+  { value: "veterinaria",      label: "Veterinaria" },
+  { value: "restaurante",      label: "Restaurante" },
+  { value: "cafeteria",        label: "Cafetería" },
+  { value: "inmobiliaria",     label: "Inmobiliaria" },
+  { value: "academia",         label: "Academia / clases particulares" },
+  { value: "taller",           label: "Taller mecánico" },
+  { value: "asesoria",         label: "Asesoría / abogacía" },
+  { value: "otro",             label: "Otro" },
 ];
 
 export default function ConfiguracionForm({ empresa, isPreview }: Props) {

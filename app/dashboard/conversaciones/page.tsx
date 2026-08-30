@@ -19,7 +19,7 @@ export default async function ConversacionesPage() {
   const { data: conversaciones } = empresa
     ? await supabase
         .from("conversaciones")
-        .select("id, estado, updated_at, lead_id, leads(nombre, canal)")
+        .select("id, estado, updated_at, lead_id, leads(nombre, canal, telefono)")
         .eq("empresa_id", empresa.id)
         .order("updated_at", { ascending: false })
     : { data: [] };

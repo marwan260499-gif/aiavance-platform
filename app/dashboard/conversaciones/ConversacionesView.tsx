@@ -3,14 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MADRID_TZ, madridDayKey } from "@/lib/dates";
-import { MessageSquare, User, Bot, Headphones, ChevronRight } from "lucide-react";
+import { MessageSquare, User, Bot, Headphones, ChevronRight, Send, Phone } from "lucide-react";
+
+const VENTANA_24H_MS = 24 * 60 * 60 * 1000;
 
 type Conversacion = {
   id: string;
   estado: string;
   updated_at: string;
   lead_id: string;
-  leads: { nombre: string | null; canal: string | null } | null;
+  leads: { nombre: string | null; canal: string | null; telefono: string | null } | null;
 };
 
 type Mensaje = {
@@ -66,10 +68,54 @@ export default function ConversacionesView({ initialConversaciones, empresaId }:
   const [selectedId, setSelectedId]         = useState<string | null>(null);
   const [mensajes, setMensajes]             = useState<Mensaje[]>([]);
   const [loadingMsgs, setLoadingMsgs]       = useState(false);
+  const [respuesta, setRespuesta]           = useState("");
+  const [enviando, setEnviando]             = useState(false);
+  const [errorEnvio, setErrorEnvio]         = useState<string | null>(null);
   const bottomRef                           = useRef<HTMLDivElement>(null);
   const esCargaInicialRef                   = useRef(true);
 
   const selected = conversaciones.find((c) => c.id === selectedId) ?? null;
+
+  // Ventana de 24h de Meta: sin un mensaje del lead en las últimas 24h no se
+  // puede mandar texto libre. Se calcula con los mensajes ya cargados, sin
+  // pedir nada nuevo al servidor.
+  const ultimoMensajeLead = [...mensajes].reverse().find((m) => m.autor === "lead");
+  const dentroDeVentana =
+    !!ultimoMensajeLead &&
+    Date.now() - new Date(ultimoMensajeLead.timestamp).getTime() <= VENTANA_24H_MS;
+
+  // Limpia el formulario de respuesta al cambiar de conversación.
+  useEffect(() => {
+    setRespuesta("");
+    setErrorEnvio(null);
+  }, [selectedId]);
+
+  async function handleEnviar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedId || !respuesta.trim() || enviando) return;
+
+    setEnviando(true);
+    setErrorEnvio(null);
+
+    const res = await fetch("/api/conversaciones/enviar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversacionId: selectedId, contenido: respuesta.trim() }),
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.ok) {
+      setErrorEnvio(data?.error ?? "No se pudo enviar el mensaje.");
+      setEnviando(false);
+      return;
+    }
+
+    // Se añade al instante en vez de esperar al realtime, igual que en Citas.
+    if (data.mensaje) setMensajes((prev) => [...prev, data.mensaje]);
+    if (data.warning) setErrorEnvio(data.warning);
+    setRespuesta("");
+    setEnviando(false);
+  }
 
   // Al abrir una conversación distinta, el próximo scroll es "salto directo"
   // (sin animación); los mensajes que lleguen después de eso sí se animan.
@@ -133,7 +179,7 @@ export default function ConversacionesView({ initialConversaciones, empresaId }:
         async (payload) => {
           const { data } = await supabase
             .from("conversaciones")
-            .select("id, estado, updated_at, lead_id, leads(nombre, canal)")
+            .select("id, estado, updated_at, lead_id, leads(nombre, canal, telefono)")
             .eq("id", (payload.new as Conversacion).id)
             .single();
           if (data) setConversaciones((prev) => [data as unknown as Conversacion, ...prev]);
@@ -313,6 +359,53 @@ export default function ConversacionesView({ initialConversaciones, empresaId }:
                 })
               )}
               <div ref={bottomRef} />
+            </div>
+
+            {/* Caja de respuesta */}
+            <div className="border-t border-gray-800 px-5 py-3.5">
+              {!dentroDeVentana && (
+                <p className="mb-2 flex items-start gap-1.5 text-xs text-amber-300">
+                  <Phone size={14} className="mt-0.5 shrink-0" strokeWidth={1.75} />
+                  <span>
+                    Han pasado más de 24h desde el último mensaje de{" "}
+                    {selected.leads?.nombre ?? "esta clienta"}. WhatsApp no permite mandar
+                    texto libre ahora mismo
+                    {selected.leads?.telefono ? (
+                      <> — puedes llamarla al <span className="font-semibold">{selected.leads.telefono}</span>.</>
+                    ) : (
+                      "."
+                    )}
+                  </span>
+                </p>
+              )}
+              {errorEnvio && (
+                <p className="mb-2 text-xs text-red-400">{errorEnvio}</p>
+              )}
+              <form onSubmit={handleEnviar} className="flex items-end gap-2">
+                <textarea
+                  value={respuesta}
+                  onChange={(e) => setRespuesta(e.target.value)}
+                  disabled={!dentroDeVentana || enviando}
+                  placeholder={
+                    dentroDeVentana ? "Escribe una respuesta..." : "No disponible fuera de la ventana de 24h"
+                  }
+                  rows={2}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleEnviar(e);
+                    }
+                  }}
+                  className="flex-1 resize-none rounded-lg border border-gray-700 bg-gray-800 px-3.5 py-2.5 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={!dentroDeVentana || !respuesta.trim() || enviando}
+                  className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:opacity-40"
+                >
+                  <Send size={16} strokeWidth={1.75} />
+                </button>
+              </form>
             </div>
           </>
         )}

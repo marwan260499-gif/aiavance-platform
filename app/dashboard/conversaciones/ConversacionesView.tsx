@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MADRID_TZ, madridDayKey } from "@/lib/dates";
 import { MessageSquare, User, Bot, Headphones, ChevronRight } from "lucide-react";
@@ -66,8 +66,27 @@ export default function ConversacionesView({ initialConversaciones, empresaId }:
   const [selectedId, setSelectedId]         = useState<string | null>(null);
   const [mensajes, setMensajes]             = useState<Mensaje[]>([]);
   const [loadingMsgs, setLoadingMsgs]       = useState(false);
+  const bottomRef                           = useRef<HTMLDivElement>(null);
+  const esCargaInicialRef                   = useRef(true);
 
   const selected = conversaciones.find((c) => c.id === selectedId) ?? null;
+
+  // Al abrir una conversación distinta, el próximo scroll es "salto directo"
+  // (sin animación); los mensajes que lleguen después de eso sí se animan.
+  useEffect(() => {
+    esCargaInicialRef.current = true;
+  }, [selectedId]);
+
+  // Baja al último mensaje: al abrir la conversación (salto instantáneo,
+  // importante con historiales largos como el de prueba de 200+ mensajes)
+  // y también cuando llega un mensaje nuevo por realtime (con animación).
+  useEffect(() => {
+    if (mensajes.length === 0) return;
+    bottomRef.current?.scrollIntoView({
+      behavior: esCargaInicialRef.current ? "auto" : "smooth",
+    });
+    esCargaInicialRef.current = false;
+  }, [mensajes]);
 
   // Load messages when selection changes
   useEffect(() => {
@@ -293,6 +312,7 @@ export default function ConversacionesView({ initialConversaciones, empresaId }:
                   );
                 })
               )}
+              <div ref={bottomRef} />
             </div>
           </>
         )}

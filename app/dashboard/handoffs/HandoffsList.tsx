@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { AlertCircle, Phone, CheckCircle } from "lucide-react";
+import { AlertCircle, Phone, CheckCircle, ChevronRight } from "lucide-react";
 import { MADRID_TZ } from "@/lib/dates";
 
 type Handoff = {
@@ -35,8 +36,13 @@ function fmt(iso: string) {
 type Props = { initialHandoffs: Handoff[]; empresaId: string | null };
 
 export default function HandoffsList({ initialHandoffs, empresaId }: Props) {
+  const router = useRouter();
   const [handoffs,  setHandoffs]  = useState<Handoff[]>(initialHandoffs);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  function irAConversacion(conversacionId: string) {
+    router.push(`/dashboard/conversaciones?conversacion=${conversacionId}`);
+  }
 
   const pendientes = handoffs.filter((h) => h.estado === "pendiente").length;
 
@@ -85,23 +91,45 @@ export default function HandoffsList({ initialHandoffs, empresaId }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, [empresaId]);
 
+  // Actualiza el estado local sin esperar al realtime: así el botón responde
+  // al instante aunque el websocket tarde o se haya caído (mismo patrón que
+  // Citas en CitasView.tsx).
   async function handleTomar(id: string) {
     setLoadingId(id);
     const supabase = createClient();
-    await supabase
+    const { error } = await supabase
       .from("handoffs")
       .update({ estado: "en_progreso" })
       .eq("id", id);
+
+    if (error) {
+      console.error("Error tomando el handoff:", error);
+      setLoadingId(null);
+      return;
+    }
+    setHandoffs((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, estado: "en_progreso" } : h))
+    );
     setLoadingId(null);
   }
 
   async function handleResolver(id: string) {
     setLoadingId(id);
     const supabase = createClient();
-    await supabase
+    const resuelto_at = new Date().toISOString();
+    const { error } = await supabase
       .from("handoffs")
-      .update({ estado: "resuelto", resuelto_at: new Date().toISOString() })
+      .update({ estado: "resuelto", resuelto_at })
       .eq("id", id);
+
+    if (error) {
+      console.error("Error resolviendo el handoff:", error);
+      setLoadingId(null);
+      return;
+    }
+    setHandoffs((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, estado: "resuelto", resuelto_at } : h))
+    );
     setLoadingId(null);
   }
 
@@ -133,7 +161,13 @@ export default function HandoffsList({ initialHandoffs, empresaId }: Props) {
         {handoffs.map((h) => (
           <div
             key={h.id}
-            className={`flex items-start gap-4 px-5 py-4 ${
+            role="button"
+            tabIndex={0}
+            onClick={() => irAConversacion(h.conversacion_id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") irAConversacion(h.conversacion_id);
+            }}
+            className={`flex cursor-pointer items-start gap-4 px-5 py-4 transition-colors hover:bg-gray-800/40 ${
               h.estado === "pendiente" ? "bg-red-500/5" : ""
             }`}
           >
@@ -166,10 +200,10 @@ export default function HandoffsList({ initialHandoffs, empresaId }: Props) {
             </div>
 
             {/* Acciones */}
-            <div className="shrink-0">
+            <div className="flex shrink-0 items-center gap-3">
               {h.estado === "pendiente" && (
                 <button
-                  onClick={() => handleTomar(h.id)}
+                  onClick={(e) => { e.stopPropagation(); handleTomar(h.id); }}
                   disabled={loadingId === h.id}
                   className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
                 >
@@ -178,7 +212,7 @@ export default function HandoffsList({ initialHandoffs, empresaId }: Props) {
               )}
               {h.estado === "en_progreso" && (
                 <button
-                  onClick={() => handleResolver(h.id)}
+                  onClick={(e) => { e.stopPropagation(); handleResolver(h.id); }}
                   disabled={loadingId === h.id}
                   className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                 >
@@ -190,6 +224,7 @@ export default function HandoffsList({ initialHandoffs, empresaId }: Props) {
                   {h.resuelto_at ? fmt(h.resuelto_at) : "Resuelto"}
                 </span>
               )}
+              <ChevronRight size={16} className="text-gray-600" strokeWidth={1.75} />
             </div>
           </div>
         ))}

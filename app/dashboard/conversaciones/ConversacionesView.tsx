@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MADRID_TZ, madridDayKey } from "@/lib/dates";
 import { MessageSquare, User, Bot, Headphones, ChevronRight, Send, Phone } from "lucide-react";
@@ -64,6 +65,10 @@ type Props = {
 };
 
 export default function ConversacionesView({ initialConversaciones, empresaId }: Props) {
+  const searchParams = useSearchParams();
+  const conversacionParam = searchParams.get("conversacion");
+  const appliedParamRef = useRef(false);
+
   const [conversaciones, setConversaciones] = useState<Conversacion[]>(initialConversaciones);
   const [selectedId, setSelectedId]         = useState<string | null>(null);
   const [mensajes, setMensajes]             = useState<Mensaje[]>([]);
@@ -75,6 +80,16 @@ export default function ConversacionesView({ initialConversaciones, empresaId }:
   const esCargaInicialRef                   = useRef(true);
 
   const selected = conversaciones.find((c) => c.id === selectedId) ?? null;
+
+  // Llegada desde Handoffs con ?conversacion=<id>: la selecciona una sola
+  // vez, sin pisar una selección manual posterior si la lista se refresca.
+  useEffect(() => {
+    if (appliedParamRef.current || !conversacionParam) return;
+    if (conversaciones.some((c) => c.id === conversacionParam)) {
+      setSelectedId(conversacionParam);
+      appliedParamRef.current = true;
+    }
+  }, [conversacionParam, conversaciones]);
 
   // Ventana de 24h de Meta: sin un mensaje del lead en las últimas 24h no se
   // puede mandar texto libre. Se calcula con los mensajes ya cargados, sin

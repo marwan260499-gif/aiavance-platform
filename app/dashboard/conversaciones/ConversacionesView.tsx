@@ -160,7 +160,10 @@ export default function ConversacionesView({ initialConversaciones, empresaId }:
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "mensajes", filter: `conversacion_id=eq.${selectedId}` },
         (payload) => {
-          setMensajes((prev) => [...prev, payload.new as Mensaje]);
+          const nuevo = payload.new as Mensaje;
+          // Los mensajes de 'agente' ya se añaden al instante en handleEnviar;
+          // sin este chequeo, el propio realtime los duplicaría al llegar.
+          setMensajes((prev) => (prev.some((m) => m.id === nuevo.id) ? prev : [...prev, nuevo]));
         }
       )
       .subscribe();
